@@ -2,9 +2,13 @@ package com.customerprovincemanagement.controller;
 
 import com.customerprovincemanagement.model.Customer;
 import com.customerprovincemanagement.model.Province;
+import com.customerprovincemanagement.repository.ICustomerRepository;
 import com.customerprovincemanagement.service.ICustomerService;
 import com.customerprovincemanagement.service.IProvinceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
@@ -20,6 +24,8 @@ public class CustomerController {
 
     @Autowired
     private IProvinceService provinceService;
+    @Autowired
+    private ICustomerRepository iCustomerRepository;
 
     @ModelAttribute("provinces")
     public Iterable<Province> listProvinces() {
@@ -77,4 +83,27 @@ public class CustomerController {
         return "redirect:/customers";
     }
 
+    @GetMapping("page")
+    public ModelAndView page(@RequestParam("page") Optional<Integer> page){
+        int currentPage = page.orElse(0);
+        Pageable pageable = PageRequest.of(currentPage,3);
+        Page<Customer> customers = customerService.findAll(pageable);
+        ModelAndView modelAndView = new ModelAndView("/customer/list");
+        modelAndView.addObject("customers", customers);
+        return modelAndView;
+    }
+
+    @GetMapping("search")
+    public ModelAndView listCustomerSearch(@RequestParam("search") Optional<String> search, Pageable pageable){
+        Page<Customer> customers;
+        if(search.isPresent()){
+            customers = iCustomerRepository.findAllByFirstNameContaining(pageable,search.get());
+        }
+        else{
+            customers = iCustomerRepository.findAll(pageable);
+        }
+        ModelAndView modelAndView = new ModelAndView("/customer/list");
+        modelAndView.addObject("customers",customers);
+        return modelAndView;
+    }
 }
